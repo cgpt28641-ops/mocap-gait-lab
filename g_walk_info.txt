@@ -1,0 +1,1 @@
+{"src": "07_01", "loop": true, "upper": false, "speed": 1.454, "slide": {"Left": {"planted_frac": 0.5204081632653061, "slide_ms": 0.12793046236572594, "slide_max_ms": 0.42680092705257977}, "Right": {"planted_frac": 0.5102040816326531, "slide_ms": 0.15176774099898505, "slide_max_ms": 0.4959286286827665}}}
