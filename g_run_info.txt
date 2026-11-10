@@ -1,1 +1,1 @@
-{"src": "35_17", "loop": true, "upper": false, "speed": 3.134, "slide": {"Left": {"planted_frac": 0.27692307692307694, "slide_ms": 0.24393113673022546, "slide_max_ms": 0.6691810753974101}, "Right": {"planted_frac": 0.23076923076923078, "slide_ms": 0.15925175145995032, "slide_max_ms": 0.31928861687205495}}}
+{"src": "UAL Jog_Fwd_Loop", "loop": true, "upper": false, "speed": 4.226}

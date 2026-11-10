@@ -1,1 +1,1 @@
-{"src": "77_14", "loop": true, "upper": false, "speed": 1.061, "slide": {"Left": {"planted_frac": 1.0, "slide_ms": 1.1722171731349373, "slide_max_ms": 4.75160043908577}, "Right": {"planted_frac": 0.6612903225806451, "slide_ms": 0.3828647226553273, "slide_max_ms": 1.794504766331096}}}
+{"src": "UAL Crouch_Fwd_Loop", "loop": true, "upper": false, "speed": 0.769}

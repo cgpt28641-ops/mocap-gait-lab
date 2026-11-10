@@ -1,0 +1,1 @@
+{"src": "UAL Walk_Loop +45 deg", "loop": true, "upper": false, "speed": 1.205, "dir": 45}

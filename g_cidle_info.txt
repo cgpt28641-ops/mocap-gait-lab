@@ -1,0 +1,1 @@
+{"src": "UAL Crouch_Idle_Loop", "loop": true, "upper": false, "speed": 0.0}

@@ -1,0 +1,1 @@
+{"src": "UAL Crouch_Fwd_Loop +90 deg", "loop": true, "upper": false, "speed": 0.769, "dir": 90}

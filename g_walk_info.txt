@@ -1,1 +1,1 @@
-{"src": "07_01", "loop": true, "upper": false, "speed": 1.454, "slide": {"Left": {"planted_frac": 0.5204081632653061, "slide_ms": 0.09891929996318881, "slide_max_ms": 0.8201838020892489}, "Right": {"planted_frac": 0.5102040816326531, "slide_ms": 0.14401103801230117, "slide_max_ms": 0.8395917596255298}}}
+{"src": "UAL Walk_Loop", "loop": true, "upper": false, "speed": 1.205}
