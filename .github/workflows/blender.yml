@@ -15,7 +15,7 @@ permissions:
 
 env:
   DATA: data/clips_standin.json
-  DEFAULT_CLIPS: climb,kneel,fire,search,work,sit,air,fall,g_creep_fix
+  DEFAULT_CLIPS: g_walk,g_run,g_creep,g_idle,climb,kneel,fire,chop,search,work,sit,air,fall,carry
 
 jobs:
   plan:
@@ -36,6 +36,7 @@ jobs:
       fail-fast: false
       matrix:
         clip: ${{ fromJson(needs.plan.outputs.clips) }}
+      max-parallel: 14
     env:
       RES: "320"
       LOOPS: "3"
