@@ -1,0 +1,77 @@
+name: blender-render
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  render:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      CMU: https://raw.githubusercontent.com/una-dinosauria/cmu-mocap/master/data
+      STEP: "4"
+      MAX_SEC: "3.0"
+      RES: "360"
+      CAMS: front,side,q34,feet
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Blender and ffmpeg
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq blender ffmpeg > /dev/null
+          blender --version | head -1
+
+      - name: Download CMU clips
+        run: |
+          mkdir -p clips
+          for c in 007/07_01 035/35_17 077/77_14 082/82_08; do
+            curl -fsSL "$CMU/$c.bvh" -o "clips/$(basename $c).bvh"
+          done
+          ls -la clips
+
+      - name: Render
+        run: blender -b --factory-startup -P blender/render_clips.py -- out clips/*.bvh
+
+      - name: Videos and contact sheets
+        run: |
+          for clipdir in out/*/; do
+            clip=$(basename "$clipdir")
+            for camdir in "$clipdir"*/; do
+              cam=$(basename "$camdir")
+              ffmpeg -loglevel error -y -framerate 30 -i "$camdir%04d.png" -c:v libx264 -pix_fmt yuv420p "out/${clip}_${cam}.mp4"
+              ffmpeg -loglevel error -y -i "$camdir%04d.png" -vf "select='not(mod(n\,3))',scale=180:-1,tile=8x3:padding=2" -frames:v 1 "out/${clip}_${cam}_sheet.png"
+            done
+            # 2x2 grid of all cameras
+            ffmpeg -loglevel error -y \
+              -framerate 30 -i "${clipdir}front/%04d.png" -framerate 30 -i "${clipdir}side/%04d.png" \
+              -framerate 30 -i "${clipdir}q34/%04d.png"  -framerate 30 -i "${clipdir}feet/%04d.png" \
+              -filter_complex "[0][1]hstack[a];[2][3]hstack[b];[a][b]vstack" \
+              -c:v libx264 -pix_fmt yuv420p "out/${clip}_grid.mp4" || true
+          done
+          ls out
+
+      - name: Upload
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: blender-render
+          path: out
+          if-no-files-found: warn
+
+      - name: Publish previews to branch 'renders'
+        if: always()
+        run: |
+          mkdir -p pub && cp out/*.mp4 out/*_sheet.png pub/ 2>/dev/null || true
+          for d in out/*/; do [ -f "$d/info.txt" ] && cp "$d/info.txt" "pub/$(basename $d)_info.txt"; done
+          cd pub
+          git init -q -b renders
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -A && git commit -q -m "renders ${GITHUB_SHA::7}" || exit 0
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" renders

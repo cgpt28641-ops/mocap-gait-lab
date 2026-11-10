@@ -1,8 +1,7 @@
 name: render
 
+# Unity version - enable push once UNITY_LICENSE secret exists.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 jobs:
