@@ -15,7 +15,7 @@ permissions:
 
 env:
   DATA: data/clips_standin.json
-  DEFAULT_CLIPS: g_walk,g_walk_right,g_walk_left,g_walk_back,g_walk_fr,g_run,g_run_right,g_run_back,g_creep,g_creep_right,g_creep_back,g_idle,g_cidle,fire,kneel,g_walk_old
+  DEFAULT_CLIPS: fire,kneel,air,fire_cmu,g_creep_left,g_run_left,g_walk_br
 
 jobs:
   plan:
