@@ -3,73 +3,83 @@ name: blender-render
 on:
   push:
     branches: [main]
+    paths: ['data/**', 'blender/**', '.github/workflows/blender.yml']
   workflow_dispatch:
+    inputs:
+      clips:
+        description: 'Comma-separated clip names (empty = default set)'
+        required: false
 
 permissions:
   contents: write
 
+env:
+  DATA: data/clips_standin.json
+  DEFAULT_CLIPS: g_walk,g_run,g_creep,g_idle,chop,carry
+
 jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    outputs:
+      clips: ${{ steps.p.outputs.clips }}
+    steps:
+      - id: p
+        run: |
+          c="${{ github.event.inputs.clips }}"; [ -z "$c" ] && c="$DEFAULT_CLIPS"
+          echo "clips=$(echo "$c" | jq -R -c 'split(",")')" >> "$GITHUB_OUTPUT"
+
   render:
+    needs: plan
     runs-on: ubuntu-24.04
     timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        clip: ${{ fromJson(needs.plan.outputs.clips) }}
     env:
-      CMU: https://raw.githubusercontent.com/una-dinosauria/cmu-mocap/master/data
-      STEP: "4"
-      MAX_SEC: "3.0"
-      RES: "360"
+      RES: "320"
+      LOOPS: "3"
+      MAX_FRAMES: "100"
       CAMS: front,side,q34,feet
     steps:
       - uses: actions/checkout@v4
-
       - name: Install Blender and ffmpeg
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq blender ffmpeg > /dev/null
-          blender --version | head -1
-
-      - name: Download CMU clips
+      - name: Render ${{ matrix.clip }}
+        run: CLIPS=${{ matrix.clip }} blender -b --factory-startup -P blender/render_joints.py -- "$DATA" out
+      - name: Video and contact sheets
         run: |
-          mkdir -p clips
-          for c in 007/07_01 035/35_17 077/77_14 082/82_08; do
-            curl -fsSL "$CMU/$c.bvh" -o "clips/$(basename $c).bvh"
+          c=${{ matrix.clip }}; d=out/$c
+          for cam in $(echo $CAMS | tr , ' '); do
+            ffmpeg -loglevel error -y -i "$d/$cam/%04d.png" -vf "select='not(mod(n\,4))',scale=160:-1,tile=8x3:padding=2" -frames:v 1 "out/${c}_${cam}_sheet.png"
           done
-          ls -la clips
-
-      - name: Render
-        run: blender -b --factory-startup -P blender/render_clips.py -- out clips/*.bvh
-
-      - name: Videos and contact sheets
-        run: |
-          for clipdir in out/*/; do
-            clip=$(basename "$clipdir")
-            for camdir in "$clipdir"*/; do
-              cam=$(basename "$camdir")
-              ffmpeg -loglevel error -y -framerate 30 -i "$camdir%04d.png" -c:v libx264 -pix_fmt yuv420p "out/${clip}_${cam}.mp4"
-              ffmpeg -loglevel error -y -i "$camdir%04d.png" -vf "select='not(mod(n\,3))',scale=180:-1,tile=8x3:padding=2" -frames:v 1 "out/${clip}_${cam}_sheet.png"
-            done
-            # 2x2 grid of all cameras
-            ffmpeg -loglevel error -y \
-              -framerate 30 -i "${clipdir}front/%04d.png" -framerate 30 -i "${clipdir}side/%04d.png" \
-              -framerate 30 -i "${clipdir}q34/%04d.png"  -framerate 30 -i "${clipdir}feet/%04d.png" \
-              -filter_complex "[0][1]hstack[a];[2][3]hstack[b];[a][b]vstack" \
-              -c:v libx264 -pix_fmt yuv420p "out/${clip}_grid.mp4" || true
-          done
-          ls out
-
-      - name: Upload
-        if: always()
-        uses: actions/upload-artifact@v4
+          ffmpeg -loglevel error -y \
+            -framerate 30 -i "$d/front/%04d.png" -framerate 30 -i "$d/side/%04d.png" \
+            -framerate 30 -i "$d/q34/%04d.png"   -framerate 30 -i "$d/feet/%04d.png" \
+            -filter_complex "[0][1]hstack[a];[2][3]hstack[b];[a][b]vstack" \
+            -c:v libx264 -pix_fmt yuv420p "out/${c}_grid.mp4"
+          cp "$d/info.txt" "out/${c}_info.txt"
+          mkdir -p pub && cp out/*_sheet.png out/*.mp4 out/*_info.txt pub/
+      - uses: actions/upload-artifact@v4
         with:
-          name: blender-render
-          path: out
-          if-no-files-found: warn
+          name: pub-${{ matrix.clip }}
+          path: pub
 
-      - name: Publish previews to branch 'renders'
-        if: always()
+  publish:
+    needs: render
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: pub-*
+          merge-multiple: true
+          path: pub
+      - name: Push previews to branch 'renders'
         run: |
-          mkdir -p pub && cp out/*.mp4 out/*_sheet.png pub/ 2>/dev/null || true
-          for d in out/*/; do [ -f "$d/info.txt" ] && cp "$d/info.txt" "pub/$(basename $d)_info.txt"; done
-          cd pub
+          cd pub && ls
           git init -q -b renders
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
