@@ -1,0 +1,1 @@
+{"src": "77_08", "loop": true, "upper": false, "speed": 0.0}

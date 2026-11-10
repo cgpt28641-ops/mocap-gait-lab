@@ -1,0 +1,1 @@
+{"src": "77_14", "loop": true, "upper": false, "speed": 0.618, "slide": {"Left": {"planted_frac": 0.8225806451612904, "slide_ms": 1.36040825396026, "slide_max_ms": 4.307966489258247}, "Right": {"planted_frac": 0.6612903225806451, "slide_ms": 1.3823996444871522, "slide_max_ms": 2.0759552959947087}}}

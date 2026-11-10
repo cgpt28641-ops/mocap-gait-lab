@@ -1,0 +1,1 @@
+{"src": "90_17", "loop": false, "upper": false, "speed": 0.0}
