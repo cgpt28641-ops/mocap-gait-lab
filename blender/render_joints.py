@@ -160,6 +160,8 @@ def render_clip(name):
     clip = D["clips"][name]
     frames = clip["frames"]
     speed = clip.get("speed", 0.0)
+    th = math.radians(clip.get("dir", 0.0))  # travel direction: 0 ahead (+y in Blender), 90 right (+x... mirrored)
+    # unity x is blender x: right is +x
     fps = D["fps"]
     seq = frames * (LOOPS if speed > 0 else 1)
     seq = seq[:MAX_FRAMES]
@@ -174,12 +176,13 @@ def render_clip(name):
         d = os.path.join(OUT, name, cname)
         os.makedirs(d, exist_ok=True)
         for k, f in enumerate(seq):
-            off = Vector((0, speed * k / fps, 0.04 - lo))  # travel along +y (forward) at the clip's speed
+            dist = speed * k / fps
+            off = Vector((dist * math.sin(th), dist * math.cos(th), 0.04 - lo))  # travel at the clip's speed
             pose(f, segs, head, off)
             hp = to_b(f[hips]) + off
             follow.location = (hp.x, hp.y, 0)
             if speed > 0:
-                follow.location = (0, speed * k / fps, 0)  # steady camera: sliding feet show against the floor
+                follow.location = (off.x, off.y, 0)  # steady camera: sliding feet show against the floor
             bpy.context.view_layer.update()
             bpy.context.scene.render.filepath = os.path.join(d, "%04d.png" % k)
             bpy.ops.render.render(write_still=True)
