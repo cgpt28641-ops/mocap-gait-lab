@@ -15,7 +15,7 @@ permissions:
 
 env:
   DATA: data/clips_standin.json
-  DEFAULT_CLIPS: g_walk,g_run,g_creep,g_idle,chop,carry
+  DEFAULT_CLIPS: climb,kneel,fire,search,work,sit,air,fall,g_creep_fix
 
 jobs:
   plan:
@@ -77,11 +77,12 @@ jobs:
           pattern: pub-*
           merge-multiple: true
           path: pub
-      - name: Push previews to branch 'renders'
+      - name: Add previews to branch 'renders' (keeps earlier clips)
         run: |
-          cd pub && ls
-          git init -q -b renders
+          url="https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}"
+          if git clone -q --depth 1 -b renders "$url" site; then :; else mkdir site && git -C site init -q -b renders; fi
+          cp -f pub/* site/ && cd site && ls
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
           git add -A && git commit -q -m "renders ${GITHUB_SHA::7}" || exit 0
-          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" renders
+          git push "$url" renders
